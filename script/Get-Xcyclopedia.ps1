@@ -10,12 +10,16 @@
 function Get-Xcyclopedia {
 
     # set-executionpolicy unrestricted -force
-
+    [CmdletBinding()]
     param (
-        [string]$save_path               = "c:\temp\strontic-xcyclopedia", #path to save output
+
+        [Parameter(ParameterSetName = 'Recursive')]
         [string[]]$target_path_recursive = @("$env:windir\system32","$env:windir\SysWOW64","$env:ProgramData","$env:userprofile\AppData\Local\GitHubDesktop\app-2.5.5\resources\app\git\usr\bin"), #target path for recursive dir
-        #[string[]]$target_path_recursive = @("C:\Program Files","C:\Program Files (x86)","$env:userprofile\AppData\Local\GitHubDesktop\app-2.5.5\resources\app\git\usr\bin"), #target path for recursive dir
+        
+        [Parameter(ParameterSetName = 'NonRecursive')]
         [string[]]$target_path           = @("$env:windir"),  # Target path for NON-recursive dir
+        
+        [string]$save_path               = "c:\temp\strontic-xcyclopedia", #path to save output
         [string]$target_file_extension   = ".exe",  # File extension to target
         [bool]$execute_files             = $false,  # In order for syntax/usage info to be gathered (stdout/stderr), the files must be executed. (NOTE: For use in a sandboxed system. Not production!)
         [bool]$take_screenshots          = $false,  # Take a screenshot if a given process has a window visible. This requires execute_files to be enabled.
@@ -594,15 +598,18 @@ function Get-FileList {
 
     Write-Host "Starting directory listing..."
 
-    $dir = $path_recursive | ForEach-Object {
-        Write-Host "--> Starting directory listing... $_ (recursive)"
-        Get-ChildItem "$_" -file -recurse -ea SilentlyContinue
+    if($($PSCmdlet.ParameterSetName).Equals("Recursive")){
+        $dir = $path_recursive | ForEach-Object {
+            Write-Host "--> Starting directory listing... $_ (recursive)"
+            Get-ChildItem "$_" -file -recurse -ea SilentlyContinue
+        }
+    } elseif ($($PSCmdlet.ParameterSetName).Equals("NonRecursive")) {
+        $dir += $path_normal | ForEach-Object {
+            Write-Host "--> Starting directory listing... $_"
+            Get-ChildItem "$_" -file -ea SilentlyContinue
+        }
     }
-    $dir += $path_normal | ForEach-Object {
-        Write-Host "--> Starting directory listing... $_"
-        Get-ChildItem "$_" -file -ea SilentlyContinue
-    }
-
+    
     # Filter down to just the specified file extension
     $files_output = $dir | Where-Object {$_.extension -eq "$file_extension"}
 
@@ -727,6 +734,3 @@ function Set-FileWriteUnlocked {
     return
 
 }
-
-#start main function with defaults
-Get-Xcyclopedia
